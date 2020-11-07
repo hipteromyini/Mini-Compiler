@@ -9,107 +9,81 @@ using namespace std;
 第三类：保留字(32)
 while  for  do  break  continue
 switch  case
-static  return 
-char    const   
+static  return
+char    const
 if      else  int   long   unsigned  void
-double  enum    
-struct        
+double  enum
+struct
 
 
 第四类：界符  ‘/*’、‘//’、 () { } [ ] " "  '
 第五类：运算符 <、<=、>、>=、=、+、-、*、/、^、
 
-对所有可数符号进行编码：
-<$,0>
-<auto,1>
-...
-<while,32>
-<+，33>
-<-,34>
-<*,35>
-</,36>
-<<,37>
-<<=,38>
-<>,39>
-<>=,40>
-<=,41>
-<==,42>
-<!=,43>
-<;,44>
-<(,45>
-<),46>
-<^,47>
-<,,48>
-<",49>
-<',50>
-<#,51>
-<&,52>
-<&&,53>
-<|,54>
-<||,55>
-<%,56>
-<~,57>
-<<<,58>左移
-<>>,59>右移
-<[,60>
-<],61>
-<{,62>
-<},63>
-<\,64>
-<.,65>
-<?,66>
-<:,67>
-<!,68>
-"[","]","{","}"
-<常数99  ,数值>
-<标识符100 ，标识符指针>
-
-
+对所有定义保留字进行编码：
+<int,1>
+<unsigned,2>
+<long,3>
+<float,4>
+<double,5>
+<char,6>
+<string,7>
+<const,8>
+<struct,9>
 */
-enum {
-  Num = 64, Fun, Sys, Glo, Loc, Id,
-  Char, Else, Enum, If, Int, Return, Sizeof, While,
-  Assign, Cond, Lor, Lan, Or, Xor, And, Eq, Ne, Lt, Gt, Le, Ge, Shl, Shr, Add, Sub, Mul, Div, Mod, Inc, Dec, Brak
-};
-static char reserveWord[32][20] = {
-    "auto", "break", "case", "char", "const", "continue",
-    "default", "do", "double", "else", "enum",
-     "for", "goto", "if", "int",
-    "register", "return", "short", "signed", "sizeof", "static",
-    "struct", "switch", "typedef", "union", "unsigned", "void",
-    "volatile", "while"
-};
-static char operaterWord[36][10] = {
-    "+", "-", "*", "/", "<", "<=", ">", ">=", "=", "==",
-    "!=", ";", "(", ")", "^", ",", "\"", "\'", "#", "&",
-    "&&", "|", "||", "%", "~", "<<", ">>", "[", "]", "{",
-    "}", "\\", ".", "\?", ":", "!"
-};
+struct Word
+{
+    string type,statement;
+    int val;
+}ans[100005];
+static string wordtype[]={"Int","Unsigned","Long","Float","Double",
+                          "Char","String","Const","Struct"};
+static string keyword[]={"while","for","do","break","continue",
+                         "switch","case","return",
+                         "int","char","double","float","long",
+                         "const","if","else","struct",};//关键字
+int key_siz;
+static string operaterWord[36] = {
+        "+", "-", "*", "/", "<", "<=", ">", ">=", "=", "==",
+        "!=", ";", "(", ")", "^", ",", "#", "&",
+        "&&", "|", "||", "%", "~", "<<", ">>", "[", "]", "{",
+        "}", ".", ":", "!"};//运算符
 const int N=1e5+5;
 char letter[N],token;
-char cur_word[N];
 int token_val,sig;
-int len,pos=1,tot;
+//数值，符号
 
+int len,pos=1,tot;
+//源代码长度，当前短语位置，总短语数
+int iskeyword(string s)
+{
+    for(int i=0;i<key_siz;i++)
+    {
+        if(s==keyword[i])
+            return i+1;
+    }
+    return 0;
+}
 void next_word()
 {
     token=letter[pos];
+    while(token==' ')//pass all the ' '
+        token=letter[++pos];
     if(token=='#')//we will not support it
     {
         while(token!=0&&token!='\n')
-            token=s[++pos];
+            token=letter[++pos];
         return;
     }
     if(token=='-')
     {
-        if(isdigit(s[pos+1])//negative integer
+        if(isdigit(letter[pos+1]))//negative integer
         {
-           sig=-1;
-           next();
+            sig=-1;
+            next_word();
         }
-        else //operater
+        else //operater -
         {
-
+            ans[++tot]={"-"};
         }
         return;
     }
@@ -119,23 +93,37 @@ void next_word()
         while(isdigit(token))
         {
             token_val=token_val*10+token-'0';
-            token=s[++pos];
+            token=letter[++pos];
         }
-        token=Num;
         token_val*=sig;
         sig=1;
+        ans[++tot]={"Int","",token_val};
         return;
     }
-
+    if(isalpha(token)||token=='_')
+    {
+        string s;
+        while(isalpha(token)||token=='_')
+        {
+            s+=token;
+            token=letter[++pos];
+        }
+        int id=iskeyword(s);
+        if(id) ans[++tot]={keyword[id-1]};
+        else 
+        {
+            ans[++tot]={"String"};
+        }
+        return;
+    }
+    
 }
-int main(int argc,char argv[])
+int main(int argc,char** argv)
 {
     char c;
-    freopen("in.txt",'r',stdin);
-    while(cin>>w)
-    {
-        if(w!=' ') letter[++len]=w;
-    }
+    freopen("in.txt","r",stdin);
+    while(cin>>c)
+        letter[++len]=c;
     while(pos<=len)
     {
         next_word();
