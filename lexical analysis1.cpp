@@ -6,15 +6,11 @@ using namespace std;
 /*
 第一类：标识符   letter(letter | digit)*  无穷集
 第二类：常数    (digit)+  无穷集
-第三类：保留字(32)
+第三类：保留字(11)
 while  for  do  break  continue
-switch  case
-static  return
-char    const
-if      else  int   long   unsigned  void
-enum
-struct
-
+return
+char int enum void
+if  else
 
 第四类：界符  ‘/*’、‘//’、 () { } [ ] " "  '
 第五类：运算符 <、<=、>、>=、=、+、-、*、/、^、
@@ -22,11 +18,14 @@ struct
 对项目支持的保留字进行编码：
 */
 enum {
-    Num=10086 , Fun, Sys, Glo, Loc, Id,Not,
-    Int, Char ,Void, If , Else , For , While , Continue , Return ,
+    Num=10086 , Fun, Sys, Glo, Loc, Id, Not , String ,
+    Int, Char ,Enum,Void, If , Else , For , While , Continue , Break, Return ,
     Main,Scanf,Printf,
     Assign,Lor, Lan, Or, Xor, And, Eq, Ne, Lt, Gt, Le, Ge, Shl, Shr, Add, Sub, Mul, Div, Inc, Dec
 };
+static string keyword[]={"int","char","void","string","if","else","for","while","continue","break","return"};//关键字
+map<string,int>mp;
+const int rev_siz=11;
 struct identifier {
     int token;//返回标记
     int hash;//哈希值
@@ -35,36 +34,40 @@ struct identifier {
     int type;//标识符的类型
     int value;//标识符的值
 };
-struct Word
-{
-    string type,statement;
-    int val;
-}lex[100005];
-//static string keyword[]={"int","char","if","else","for","while","continue","return"};//关键字
+//struct tbNode
+//{
+//    char name[20];
+//    char type[16];
+//    void *addr;
+//}lex[100005];
+//struct symbolTb
+//{
+//    struct symbolTb *pre;
+//    int width;
+//    int counter;
+//    struct tbNode * data[200];
+//};
+
 int key_siz;
 const int N=1e5+5;
 char letter[N],token;
 int token_val,sig,hash;
 int Table[N];
 int idmain[N];
-//数值，符号
-static string operaterWord[36] = {
-        "+", "-", "*", "/", "<", "<=", ">", ">=", "=", "==",
-        "!=", ";", "(", ")", "^", ",", "#", "&",
-        "&&", "|", "||", "%", "~", "<<", ">>", "[", "]", "{",
-        "}", ".", ":", "!"};//运算符
-
 
 int len,pos=1,tot;
 //源代码长度，当前短语位置，总短语数
-int iskeyword(string s)
+bool iskeyword(string s)
 {
-    for(int i=0;i<key_siz;i++)
+    for(int i=0;i<rev_siz-1;i++)
     {
         if(s==keyword[i])
-            return i+1;
+        {
+            token=mp[s];
+            return true;
+        }
     }
-    return 0;
+    return false;
 }
 void next_word()
 {
@@ -85,14 +88,8 @@ void next_word()
             s+=token;
             token=letter[++pos];
         }
-        /*
-         * 判断是否是保留字
-         * int id=iskeyword(s);
-        if(id) lex[++tot]={keyword[id-1]};
-        else
-        {
-            lex[++tot]={"String"};
-        }*/
+        //判断是否是保留字
+        if(!iskeyword(s)) token=String;
         return;
     }
     if(isdigit(token))// 正数
@@ -243,16 +240,12 @@ void next_word()
     }
 
 }
-void init()
-{
-    string s="int char void if else for  while  continue  return "
-             " main scanf printf";
-}
+
 int main(int argc,char** argv)
 {
     char c;
 //    freopen("in.txt","r",stdin);
-    init();
+    len=0;
     while(cin>>c)
         letter[++len]=c;
     while(pos<=len)
@@ -262,3 +255,4 @@ int main(int argc,char** argv)
 
     return 0;
 }
+
