@@ -1,258 +1,266 @@
-// This is only the first try of the cpp project of lexical analysis.
-#include <bits/stdc++.h>
+// This is the fifth try of the cpp project of lexical analysis.
+#include "bits/stdc++.h"
 using namespace std;
-//词法分析程序
-//首先定义种别码
-/*
-第一类：标识符   letter(letter | digit)*  无穷集
-第二类：常数    (digit)+  无穷集
-第三类：保留字(11)
-while  for  do  break  continue
-return
-char int enum void
-if  else
+#define K_DIGIT       3      //整数
+#define K_CHAR        4      //字符
+#define K_STRING      5      //字符串
+#define K_TYPE        6      //数据类型
+#define K_KEYWORDS    7      //关键字
+#define K_OPERATOR    8      //运算符
+#define K_IDENTIFIER  9      //标识符
+#define K_BRACKET     10     //括号
 
-第四类：界符  ‘/*’、‘//’、 () { } [ ] " "  '
-第五类：运算符 <、<=、>、>=、=、+、-、*、/、^、
+using namespace std;
 
-对项目支持的保留字进行编码：
-*/
-enum {
-    Num=10086 , Fun, Sys, Glo, Loc, Id, Not , String ,
-    Int, Char ,Enum,Void, If , Else , For , While , Continue , Break, Return ,
-    Main,Scanf,Printf,
-    Assign,Lor, Lan, Or, Xor, And, Eq, Ne, Lt, Gt, Le, Ge, Shl, Shr, Add, Sub, Mul, Div, Inc, Dec
-};
-static string keyword[]={"int","char","void","string","if","else","for","while","continue","break","return"};//关键字
-map<string,int>mp;
-const int rev_siz=11;
-struct identifier {
-    int token;//返回标记
-    int hash;//哈希值
-    char * name;//本身的字符串
-    int clas;
-    int type;//标识符的类型
-    int value;//标识符的值
-};
-//struct tbNode
-//{
-//    char name[20];
-//    char type[16];
-//    void *addr;
-//}lex[100005];
-//struct symbolTb
-//{
-//    struct symbolTb *pre;
-//    int width;
-//    int counter;
-//    struct tbNode * data[200];
-//};
-
-int key_siz;
-const int N=1e5+5;
-char letter[N],token;
-int token_val,sig,hash;
-int Table[N];
-int idmain[N];
-
-int len,pos=1,tot;
-//源代码长度，当前短语位置，总短语数
-bool iskeyword(string s)
+//存储分词类型
+typedef struct IDwords
 {
-    for(int i=0;i<rev_siz-1;i++)
-    {
-        if(s==keyword[i])
-        {
-            token=mp[s];
-            return true;
-        }
-    }
-    return false;
+    int       id;     //标志
+    string    word;   //单词
+}IDwords;
+
+//字符转字符串
+string char_to_str(char c)
+{
+    char s[2] = " ";
+    s[0] = c;
+    return string(s);
 }
-void next_word()
+
+//是否为运算操作符
+int is_operator(char c)
 {
-    token=letter[pos];
-    while(token==' ')//跳过所有空格（' '）
-        token=letter[++pos];
-    if(token=='#')//跳过宏定义
+    if(c == '+' || c=='-'||c=='*'||c=='/'||c==','||c=='=' ||c=='>' || c=='<')
+        return 1;
+    else
+        return 0;
+}
+
+//是否为大括号、小括号、分号
+int is_bracket(char c)
+{
+    if(c=='{' || c=='}' || c=='(' || c==')' ||c==';')
+        return 1;
+    else
+        return 0;
+}
+
+//是否为空白
+int is_blank(char c)
+{
+    if(c=='\n' || c=='\t' || c==' ' || c=='\r')
+        return 1;
+    else
+        return 0;
+}
+
+//判断单词类型
+int word_token(string s)
+{
+    int  size = s.size();
+    //字符数据
+    if(s[0]=='\'')
     {
-        while(token!=0&&token!='\n')
-            token=letter[++pos];
-        return;
+        if(s[size-1] == '\'')
+            return K_CHAR;
+        else
+        {
+            cout<<"错误的字符串数据："<<s<<endl;
+            exit(-1);
+        }
     }
-    if(isalpha(token)||token=='_')//字符串
+        //字符串数据
+    else if(s[0]=='\"')
     {
-        string s;
-        while(isalpha(token)||token=='_')
+        if(s[size-1]=='\"')
+            return K_STRING;
+        else
         {
-            s+=token;
-            token=letter[++pos];
+            cout<<"错误的字符串数据："<<s<<endl;
+            exit(-1);
         }
-        //判断是否是保留字
-        if(!iskeyword(s)) token=String;
-        return;
     }
-    if(isdigit(token))// 正数
+        //整数
+    else if(isdigit(s[0]))
     {
-        token_val=0;
-        while(isdigit(token))
+        for(int i=1;i<size;i++)
         {
-            token_val=token_val*10+token-'0';
-            token=letter[++pos];
-        }
-        token_val*=sig;
-        sig=1;
-        token=Num;
-        return;
-    }
-    if(token=='+')
-    {
-        if(letter[pos+1]=='+')
-        {
-            pos++;
-            token=Inc;
-        }
-        else // - 运算符
-        {
-            token=Add;
-        }
-        return;
-    }
-    if(token=='-')
-    {
-        if(letter[pos+1]=='-')
-        {
-            pos++;
-            token=Dec;
-        }
-        if(isdigit(letter[pos+1]))//负数
-        {
-            sig=-1;
-            next_word();
-        }
-        else // - 运算符
-        {
-            token=Sub;
-        }
-        return;
-    }
-    if(token=='*')
-    {
-        token=Mul;
-        return;
-    }
-    if(token=='/')
-    {
-        if(letter[pos+1]=='/')
-        {
-            // 单行注释
-            token=letter[++pos];
-            while(token!=0&&token!='\n')
+            if(!isdigit(s[i]))
             {
-                token=letter[++pos];
+                cout<<"不合法的标识符："<<s<<endl;
+                exit(-1);
             }
-            return;
         }
+        return K_DIGIT;
+    }
+    else
+    {
+        for(int i=0;i<size;i++)
+        {
+            if(!isalnum(s[i]) && s[i]!='_')
+            {
+                cout<<"不合法的标识符："<<s<<endl;
+                exit(-1);
+            }
+        }
+        //数据类型
+        if(s=="int" || s=="char")
+            return K_TYPE;
+            //关键字
+        else if(s=="if" || s=="else" || s=="printf" || s=="main")
+            return K_KEYWORDS;
+            //自定义标识符
         else
-        {
-            // 除运算符
-            token=Div;
-            return;
-        }
+            return K_IDENTIFIER;
     }
-    if(token=='=')
-    {
-        if(letter[pos+1]=='=')
-        {
-            pos++;
-            token=Eq;//==
-        }
-        else token=Assign;//=
-        return;
-    }
-    if(token=='!')
-    {
-        if(letter[pos+1]=='=')
-        {
-            pos++;
-            token=Ne;//不等于
-        }
-        else
-        {
-            token=Not;//取反
-        }
-        return;
-    }
-    if(token=='<')
-    {
-        if(letter[pos+1]=='<')
-        {
-            pos++;
-            token=Shl;//左移
-        }
-        else if(letter[pos+1]=='=')
-        {
-            pos++;
-            token=Le;//<=
-        }
-        else token=Lt;//<
-        return;
-    }
-    if(token=='>')
-    {
-        if(letter[pos+1]=='>')
-        {
-            pos++;
-            token=Shr;//右移
-        }
-        else if(letter[pos+1]=='=')
-        {
-            pos++;
-            token=Ge;//>=
-        }
-        else token=Gt;//>
-        return;
-    }
-    if(token=='|')
-    {
-        if(letter[pos+1]=='|')
-        {
-            pos++;
-            token=Lor;//||
-        }
-        else token=Or;//|运算
-        return;
-    }
-    if(token=='&')
-    {
-        if(letter[pos+1]=='&')
-        {
-            pos++;
-            token=Lan;//&&
-        }
-        else token=And;//&
-        return;
-    }
-    if(token=='^')
-    {
-        token=Xor;
-        return;
-    }
-
 }
 
-int main(int argc,char** argv)
+//添加分词结果
+void add_keywords(vector<IDwords> &v,int id,string word)
 {
-    char c;
-//    freopen("in.txt","r",stdin);
-    len=0;
-    while(cin>>c)
-        letter[++len]=c;
-    while(pos<=len)
+    v.push_back({id,word});
+}
+
+//词法分析
+void lexical_analysis(string source,vector<IDwords> &AnalysisResults)
+{
+    char   ch;
+    ifstream   rfile(source.c_str());
+    if(!rfile.is_open())
     {
-        next_word();
+        cout<<"无法打开源文件"<<endl;
+        exit(-1);
     }
+    rfile>>noskipws;   //不过滤空格
+    while(rfile>>ch)
+    {
+        int state=0;        //判断状态
+        string tmp;       //字符串缓存
+        char        try_ch;         //探测前面的字符
+        switch(state)
+        {
+            case 0:
+                if(ch=='/') //可能是注释
+                {
+                    rfile>>try_ch;
+                    if(try_ch=='/')
+                    {
+                        while(rfile>>try_ch)
+                        {
+                            if(try_ch=='\n')
+                                break;   //单行注释
+                        }
+                        break;
+                    }
+                    else if(try_ch=='*')
+                    {
+                        while(rfile>>try_ch)
+                        {
+                            if(try_ch=='*')
+                            {
+                                rfile>>try_ch;
+                                if(try_ch=='/')
+                                    break; //多行注释
+                            }
+                        }
+                        break;
+                    }
+                    else
+                    {
+                        add_keywords(AnalysisResults,K_OPERATOR,char_to_str(ch));
+                        ch = try_ch;  //继续状态1
+                    }
+                }
+            case 1:
+                if(is_operator(ch)) //判断操作符
+                {
+                    add_keywords(AnalysisResults,K_OPERATOR,char_to_str(ch));
+                    break;
+                }
+            case 2:
+                if(is_bracket(ch)) //大括号、小括号
+                {
+                    add_keywords(AnalysisResults,K_BRACKET,char_to_str(ch));
+                    break;
+                }
+            case 3:
+                if(is_blank(ch)) //换行符
+                    break;
+            case 4:
+                if(ch=='#') //跳过预处理
+                {
+                    while(rfile>>ch)
+                    {
+                        if(is_blank(ch))
+                        {
+                            break;
+                        }
+                    }
+                    break;
+                }
+            default://判断单词类型
+                tmp += char_to_str(ch);
+                while(rfile>>try_ch)
+                {
+                    if(try_ch == '\"')
+                    {
+                        tmp += char_to_str(try_ch);
+                        if(ch == '\"')
+                        {
+                            add_keywords(AnalysisResults,word_token(tmp),tmp);
+                            break;
+                        }
+                        else
+                        {
+                            cout<<"不合法的标识符："+tmp<<endl;
+                            exit(-1);
+                        }
+                    }
+                    else if(is_blank(try_ch) )//换行符
+                    {
+                        if(ch != '\'' && ch != '\"')
+                        {
+                            add_keywords(AnalysisResults,word_token(tmp),tmp);
+                            break;
+                        }
+                        else
+                            tmp += char_to_str(try_ch);
+                    }
+                    else if(is_operator(try_ch) )
+                    {
+                        if(ch !='\'' && ch != '\"' )
+                        {
+                            add_keywords(AnalysisResults,word_token(tmp),tmp);
+                            add_keywords(AnalysisResults,K_OPERATOR,char_to_str(try_ch));
+                            break;
+                        }
+                        else
+                            tmp  += char_to_str(try_ch);
+                    }
+                    else if(is_bracket(try_ch))
+                    {
+                        add_keywords(AnalysisResults,word_token(tmp),tmp);
+                        add_keywords(AnalysisResults,K_BRACKET,char_to_str(try_ch));
+                        break;
+                    }
+                    else
+                        tmp  += char_to_str(try_ch);
+                }
+        }
+    }
+    rfile.close();
+}
+
+//输出词法分析结果
+void print_lexical(vector<IDwords> &v)
+{
+
+    for(auto i:v)
+        cout<<i.id<<" "<<i.word<<endl;
+}
+
+int main()
+{
 
     return 0;
 }
-
