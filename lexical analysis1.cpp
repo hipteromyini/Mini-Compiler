@@ -13,11 +13,11 @@ using namespace std;
 using namespace std;
 
 //存储分词类型
-typedef struct IDwords
+struct IDwords
 {
     int       id;     //标志
     string    word;   //单词
-}IDwords;
+};
 
 //字符转字符串
 string char_to_str(char c)
@@ -45,7 +45,7 @@ int is_bracket(char c)
         return 0;
 }
 
-//是否为空白
+//是否为换行符
 int is_blank(char c)
 {
     if(c=='\n' || c=='\t' || c==' ' || c=='\r')
@@ -54,7 +54,7 @@ int is_blank(char c)
         return 0;
 }
 
-//判断单词类型
+//判断单词类型（保留字|标识符）
 int word_token(string s)
 {
     int  size = s.size();
