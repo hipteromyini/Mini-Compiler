@@ -32,4 +32,5 @@ for,while循环以及{}块代码
 ## 文本编辑器
 
 ## 测试程序 
+copy.c是在网上找的改的代码，liushen.c的代码里面那个while，以及If语句里面不能进行printf的bug能力有限改不了。
 
